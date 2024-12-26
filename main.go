@@ -32,7 +32,13 @@ func main() {
 		secret: []byte(secret),
 	}
 
-	conn, err := pgx.Connect(context.Background(), env["DATABASE_URL"])
+	conn, err := pgx.Connect(context.Background(), fmt.Sprintf(
+		"host=%s dbname=%s user=%s password=%s",
+		env["POSTGRES_HOST"],
+		env["POSTGRES_DB"],
+		env["POSTGRES_USER"],
+		env["POSTGRES_PASSWORD"],
+	))
 	if err != nil {
 		log.Fatal(fmt.Errorf("cant connect to pg: %w", err))
 	}
@@ -59,5 +65,8 @@ func main() {
 	r.POST("/auth", app.AuthHandler)
 	r.POST("/refresh", app.RefreshHandler)
 
-	r.Run("0.0.0.0:8080")
+	if gin.Mode() == gin.ReleaseMode {
+		log.Println("server started")
+	}
+	r.Run()
 }

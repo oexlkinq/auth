@@ -1,0 +1,51 @@
+services:
+  auth:
+    depends_on:
+      pg:
+        condition: service_healthy
+    build:
+      context: .
+    container_name: auth-go
+    hostname: auth-go
+    environment:
+      - POSTGRES_HOST
+      - POSTGRES_USER
+      - POSTGRES_PASSWORD
+      - POSTGRES_DB
+    networks:
+      - auth-go-net
+    ports:
+      - 8080:8080
+    deploy:
+      restart_policy:
+        condition: on-failure
+
+  pg:
+    image: postgres
+    container_name: auth-db
+    hostname: $POSTGRES_HOST
+    environment:
+      - POSTGRES_USER
+      - POSTGRES_PASSWORD
+      - POSTGRES_DB
+    networks:
+      - auth-go-net
+    # ports:
+    #   - 15432:5432
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./initdb:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ['CMD', 'pg_isready', '-U', $POSTGRES_USER, '-d', $POSTGRES_DB]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: on-failure:5
+
+volumes:
+  pgdata:
+
+networks:
+  auth-go-net:
+    driver: bridge
